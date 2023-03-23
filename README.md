@@ -3,4 +3,4 @@ This is the game Pong made in C++ with the SFML Library. Showing knowledge of OO
 // Controls
 W -> Up
 S -> Down
-D -> Serve Ball(upon start)
+D -> Serve Ball(upon start).
