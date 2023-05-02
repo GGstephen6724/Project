@@ -14,3 +14,6 @@ This project is useful because it's fun, applies real physics, and its a great b
 
 **List of Maintainers**
 George Stephen - github.com/GGstephen6724
+
+
+![image](https://user-images.githubusercontent.com/92836017/235571652-332fa822-8cf1-40af-9764-273f5b0b682e.png)
