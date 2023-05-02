@@ -2,28 +2,42 @@
  *  Author: George Stephen
  *  Class: Programming II, COP 3003
  *
- *  Second Check In Tasks Completed:
- *  Ball is now bouncing off walls
- *  Collisions for the ball
- *  Fixed player paddle controls
- *
- *
- *  Need to complete:
- *  Fix collisions for paddles
- *  Add Player 2 Paddle with collisions
- *  Display Score
- *  etc.
+ ___       __   _______   ___       ________  ________  _____ ______   _______
+|\  \     |\  \|\  ___ \ |\  \     |\   ____\|\   __  \|\   _ \  _   \|\  ___ \
+\ \  \    \ \  \ \   __/|\ \  \    \ \  \___|\ \  \|\  \ \  \\\__\ \  \ \   __/|
+ \ \  \  __\ \  \ \  \_|/_\ \  \    \ \  \    \ \  \\\  \ \  \\|__| \  \ \  \_|/__
+  \ \  \|\__\_\  \ \  \_|\ \ \  \____\ \  \____\ \  \\\  \ \  \    \ \  \ \  \_|\ \
+   \ \____________\ \_______\ \_______\ \_______\ \_______\ \__\    \ \__\ \_______\
+    \|____________|\|_______|\|_______|\|_______|\|_______|\|__|     \|__|\|_______|
+ _________  ________
+|\___   ___\\   __  \
+\|___ \  \_\ \  \|\  \
+     \ \  \ \ \  \\\  \
+      \ \  \ \ \  \\\  \
+       \ \__\ \ \_______\
+        \|__|  \|_______|
+ ________  ________  ________   ________
+|\   __  \|\   __  \|\   ___  \|\   ____\
+\ \  \|\  \ \  \|\  \ \  \\ \  \ \  \___|
+ \ \   ____\ \  \\\  \ \  \\ \  \ \  \  ___
+  \ \  \___|\ \  \\\  \ \  \\ \  \ \  \|\  \
+   \ \__\    \ \_______\ \__\\ \__\ \_______\
+    \|__|     \|_______|\|__| \|__|\|_______|
+
+ This project runs a game called Pong. A game using the SFML library that contains
+ two paddles and a ball. The objective of the game is to score as many points as
+ possible by hitting the ball past your opponents paddle.
  * -------------------------------------------------------- */
 
 #include "pong_defs.h"
 
 // Function declarations (prototypes)
-void setup(Ball &ball, Borders &theWalls, MovingBlock &playerPaddle, MovingBlock AI_paddle);
+void setup(Ball &ball, Borders &theWalls, MovingBlock &playerPaddle, MovingBlock &AI_paddle);
 Direction processInput();
-bool update(Direction &input, Ball &ball, float delta, Borders walls, MovingBlock &playerPaddle, bool &started, MovingBlock AI_paddle); // end update
-void render(sf::RenderWindow &window, Ball &ball, float delta, Borders theWalls, MovingBlock playerPaddle, MovingBlock AI_paddle);
-bool collisionChecks(bool gameOver, Ball &ball, MovingBlock &playerPaddle, Borders &walls, MovingBlock AI_paddle);
-bool checkBlockCollision(Block &moving, Block &stationary);
+bool update(Direction &input, Ball &ball, float delta, Borders walls, MovingBlock &playerPaddle, bool &started, MovingBlock &AI_paddle); // end update
+void render(sf::RenderWindow &window, Ball &ball, float delta, Borders &theWalls, MovingBlock &playerPaddle, MovingBlock &AI_paddle);
+bool collisionChecks(bool gameOver, Ball &ball, MovingBlock &playerPaddle, Borders &walls, MovingBlock &AI_paddle);
+void moveAIPaddle(Ball &ball, MovingBlock &AI_Paddle);
 
 int main() {
     // create a 2d graphics window
@@ -74,7 +88,7 @@ int main() {
     return 0;
 }
 
-void setup(Ball &theBall, Borders &theWalls, MovingBlock &playerPaddle, MovingBlock AI_paddle){
+void setup(Ball &theBall, Borders &theWalls, MovingBlock &playerPaddle, MovingBlock &AI_paddle){
 
     theWalls.leftWall.left = 0.0;
     theWalls.leftWall.top = 0.0;
@@ -122,9 +136,9 @@ void setup(Ball &theBall, Borders &theWalls, MovingBlock &playerPaddle, MovingBl
     AI_paddle.block.top = (WINDOW_HEIGHT - PADDLE_HEIGHT) / 2.0;
     AI_paddle.block.width = PADDLE_THICKNESS;
     AI_paddle.block.height = PADDLE_HEIGHT;
-    AI_paddle.block.wallColor = PADDLE_COLOR;
+    AI_paddle.block.wallColor = sf::Color::Green;
     AI_paddle.block.rect.setSize(sf::Vector2f(AI_paddle.block.width, AI_paddle.block.height));
-    AI_paddle.block.rect.setFillColor(PADDLE_COLOR);
+    AI_paddle.block.rect.setFillColor(sf::Color::Green);
     AI_paddle.velocityX = 0.0;
     AI_paddle.velocityY = 0.0;
 
@@ -137,8 +151,8 @@ void setup(Ball &theBall, Borders &theWalls, MovingBlock &playerPaddle, MovingBl
 
 }
 
-bool checkCollision(Ball theBall, Block &theWalls, MovingBlock &playerPaddle){
-    bool collision = false;
+bool checkCollision(Ball &theBall, Block &theWalls, MovingBlock &playerPaddle, MovingBlock &AI_Paddle){
+    int collision = 0;
     float ballLeft = theBall.coordinateX - theBall.radius;
     float ballTop = theBall.coordinateY - theBall.radius;
     float ballRight = theBall.coordinateX + theBall.radius;
@@ -149,11 +163,34 @@ bool checkCollision(Ball theBall, Block &theWalls, MovingBlock &playerPaddle){
     float boxRight = theWalls.left + theWalls.width;
     float boxBottom = theWalls.top + theWalls.height;
 
+    float paddleLeft = playerPaddle.block.left;
+    float paddleTop = playerPaddle.block.top;
+    float paddleRight = playerPaddle.block.left + playerPaddle.block.width;
+    float paddleBottom = playerPaddle.block.top + playerPaddle.block.height;
+
+    float aiPaddleLeft = AI_Paddle.block.left;
+    float aiPaddleTop = AI_Paddle.block.top;
+    float aiPaddleRight = AI_Paddle.block.left + AI_Paddle.block.width;
+    float aiPaddleBottom = AI_Paddle.block.top + AI_Paddle.block.height;
+
+    if(ballLeft < aiPaddleLeft &&
+       ballRight > aiPaddleRight &&
+       ballTop < aiPaddleBottom &&
+       ballBottom > aiPaddleTop ){
+        return true;
+    }
+
+    if (paddleTop > boxBottom &&
+        paddleBottom < boxTop){
+        collision = 2;
+        return true;
+    }
+
     if(ballLeft < boxRight &&
        ballRight > boxLeft &&
        ballTop < boxBottom &&
-       ballBottom > boxTop){
-        collision = true;
+       ballBottom > boxTop ){
+        collision = 1;
     }
     return collision;
 }
@@ -181,7 +218,7 @@ Direction processInput() {
     return input;
 } // end getUserInput
 
-void render(sf::RenderWindow &window, Ball &ball, float delta, Borders theWalls, MovingBlock playerPaddle, MovingBlock AI_paddle) {
+void render(sf::RenderWindow &window, Ball &ball, float delta, Borders &theWalls, MovingBlock &playerPaddle, MovingBlock &AI_paddle) {
     // clear the window with the background color
     window.clear(WINDOW_COLOR);
 
@@ -192,14 +229,12 @@ void render(sf::RenderWindow &window, Ball &ball, float delta, Borders theWalls,
     // set screen coordinates relative to the center of the circle
     circle.setOrigin(ball.radius, ball.radius);
 
-
     // Ball Position
     float xPosition;
     float yPosition;
     xPosition = ball.coordinateX + ball.velocityX * delta;
     yPosition = ball.coordinateY + ball.velocityY * delta;
     circle.setPosition(xPosition, yPosition);
-    window.draw(circle);
 
     // Paddle Position
     float X;
@@ -207,7 +242,7 @@ void render(sf::RenderWindow &window, Ball &ball, float delta, Borders theWalls,
     X = playerPaddle.block.left + playerPaddle.velocityX * delta;
     Y = playerPaddle.block.top + playerPaddle.velocityY * delta;
     playerPaddle.block.rect.setPosition(X, Y);
-    window.draw(playerPaddle.block.rect);
+
 
     // AI Paddle Position
     float AI_X;
@@ -216,68 +251,76 @@ void render(sf::RenderWindow &window, Ball &ball, float delta, Borders theWalls,
     AI_Y = AI_paddle.block.top + AI_paddle.velocityY * delta;
     AI_paddle.block.rect.setPosition(AI_X, AI_Y);
     window.draw(AI_paddle.block.rect);
-    //AI_paddle.block.rect.setFillColor(WALLCOLOR);
+    AI_paddle.block.rect.setFillColor(PADDLE_COLOR);
 
     // Window Drawing
     window.draw(theWalls.leftWall.rect);
     window.draw(theWalls.rightWall.rect);
     window.draw(theWalls.topWall.rect);
     window.draw(theWalls.bottomWall.rect);
+
+    window.draw(AI_paddle.block.rect);
+    window.draw(playerPaddle.block.rect);
+    window.draw(circle);
     // show the new window
     window.display();
 }
 
-bool collisionChecks(bool gameOver, Ball &ball, MovingBlock &playerPaddle, Borders &walls, MovingBlock AI_paddle) {
+bool collisionChecks(bool gameOver, Ball &ball, MovingBlock &playerPaddle, Borders &walls, MovingBlock &AI_paddle) {
     gameOver = false;
 
-    if(checkCollision(ball, playerPaddle.block, playerPaddle)){
+    if(checkCollision(ball, playerPaddle.block, playerPaddle, AI_paddle)){
         // If hit
         ball.velocityX *= - 1;
         ball.coordinateX = playerPaddle.block.left + playerPaddle.block.width + ball.radius + 1;
     }
 
-    else if(checkCollision(ball, walls.leftWall, playerPaddle)) {
+    if(checkCollision(ball, playerPaddle.block, playerPaddle, AI_paddle)){
+        // If hit
+        ball.velocityX *= - 1;
+        ball.coordinateX = AI_paddle.block.left + AI_paddle.block.width + ball.radius + 1;
+    }
+
+    else if(checkCollision(ball, walls.leftWall, playerPaddle, AI_paddle)) {
         ball.velocityX *= -1;
         ball.coordinateX = walls.leftWall.left + walls.leftWall.width + ball.radius;
         gameOver = true;
     }
 
-    else if(checkCollision(ball, walls.rightWall, playerPaddle)){
+    else if(checkCollision(ball, walls.rightWall, playerPaddle, AI_paddle)){
         ball.velocityX *= -1;
         ball.coordinateX = walls.rightWall.left - ball.radius -1;
         gameOver = true;
     };
-    if(checkCollision(ball, walls.topWall, playerPaddle)){
+
+    if(checkCollision(ball, walls.topWall, playerPaddle, AI_paddle)){
         ball.velocityY *= -1;
     }
-    else if(checkCollision(ball, walls.bottomWall, playerPaddle)){
+
+    else if(checkCollision(ball, walls.bottomWall, playerPaddle, AI_paddle)){
         ball.velocityY *= -1;
         ball.coordinateY = walls.bottomWall.top - ball.radius -1;
+    }
+
+    float paddleCenter = AI_paddle.block.top + AI_paddle.block.height / 2.0;
+    float ballCenter = ball.coordinateX + ball.coordinateY;
+
+    if (ballCenter < paddleCenter) {
+        AI_paddle.velocityY = -PADDLE_SPEED;
+    }
+
+    else if (ballCenter > paddleCenter) {
+        AI_paddle.velocityY = +PADDLE_SPEED;
+    }
+
+    else {
+        AI_paddle.velocityY = 0.0;
     }
     return gameOver;
 }
 
-bool checkBlockCollision(Block &moving, Block &stationary) {
-    bool collision = false;
-    // Walls
-    float stationaryTop = stationary.top;
-    float stationaryBottom = stationary.top + stationary.height;
-
-    // Player paddle block
-    float movingBottom = moving.top + moving.height;
-    float movingTop = moving.top;
-
-    // Moving block = playerPaddle.block
-    //  stationary block = walls.topWall
-    if(movingTop < stationaryBottom &&
-       movingBottom > stationaryTop){
-        collision = true;
-    }
-    return false;
-}
-
 bool update(Direction &input, Ball &ball, float delta, Borders walls, MovingBlock &playerPaddle,
-       bool &started, MovingBlock AI_paddle) {
+       bool &started, MovingBlock &AI_paddle) {
     // adjust velocity directions for user input
     bool gameOver = false;
     if (input) {
@@ -292,11 +335,8 @@ bool update(Direction &input, Ball &ball, float delta, Borders walls, MovingBloc
                 if(!started){
                     ball.velocityY = BALL_SPEED_Y;
                     ball.velocityX = BALL_SPEED_X;
-                    /* randomly set vertical velocity to positive or negative
-                     by seeing if the tenths place of current delta
-                    (i.e. 1st digit after the decimal) is odd or even.  */
                     if ((int(delta * 10) & 1) % 2) {
-                        ball.velocityY *= -1;  // ball goes down if odd
+                        ball.velocityY *= -1;
                     }
                     started = true;
                 }
@@ -306,6 +346,8 @@ bool update(Direction &input, Ball &ball, float delta, Borders walls, MovingBloc
         // clear input
         input = None;
     }
+
+    moveAIPaddle(ball, AI_paddle);
 
     // Checks the "started" flag variable
     if (started == 1) {
@@ -332,11 +374,25 @@ bool update(Direction &input, Ball &ball, float delta, Borders walls, MovingBloc
     ball.coordinateY += ball.velocityY * delta;
 
     collisionChecks(gameOver, ball, playerPaddle, walls, AI_paddle);
-
     return gameOver;
 }
 
+void moveAIPaddle(Ball &ball, MovingBlock &AI_paddle) {
+    float paddleCenter = AI_paddle.block.top + AI_paddle.block.height / 2.0;
+    float ballCenter = ball.coordinateX + ball.coordinateY;
 
-// end render
+    if (ballCenter < paddleCenter) {
+        AI_paddle.velocityY = -PADDLE_SPEED;
+    }
+
+    else if (ballCenter > paddleCenter) {
+        AI_paddle.velocityY = +PADDLE_SPEED;
+    }
+
+    else {
+        AI_paddle.velocityY = 0.0;
+    }
+}
+
 
 
